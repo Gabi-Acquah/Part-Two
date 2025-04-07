@@ -1,6 +1,6 @@
 import React from 'react'
 
-const SearchList = ({dataSearch, search, changeSearch}) => {
+const Filter = ({dataSearch, search, changeSearch}) => {
   return (
     <div>
         <h2>Phonebook</h2>
@@ -13,4 +13,4 @@ const SearchList = ({dataSearch, search, changeSearch}) => {
   )
 }
 
-export default SearchList
+export default Filter
