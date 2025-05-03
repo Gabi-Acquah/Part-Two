@@ -1,119 +1,80 @@
-import React, { useEffect, useState } from "react"
-import Persons from "./components/Persons"
-import PersonForm from "./components/PersonForm"
-import Filter from "./components/Filter"
-import personService from './services/persons'
+import React, { useEffect, useState } from 'react'
+import axios from 'axios'
+import Nations from './components/Nations'
 
 const App = () => {
-  const [persons, setPersons] = useState([])
-  const [newName, setNewName] = useState('')
-  const [num, setNum] = useState('')
-  const [search, setSearch] = useState('')
+  const [query, setQuery] = useState('')
+  const [country, setCountry] = useState(null)
+  const [list, setList] = useState([])
+  const [display, setDisplay] = useState('')
 
   useEffect(()=>{
-    personService.getAll()
-    .then(existingPersons=>{
-      setPersons(existingPersons)
-    })
-  },[])
- 
-
-  const addData =(event)=>{
-    event.preventDefault()
-    const newPerson = {name:newName, number:num, id:String(persons.length + 1)}
-    const personObj = persons.find(p=>p.name===newPerson.name)
-    
-    if(personObj){
-      const msg = window.confirm(`${personObj.name} already added, change the number?`)
-      const updatedPerson = {...personObj, number:newPerson.number}
-      msg 
-      ? personService.update(personObj.id, updatedPerson)
-      .then(updateResponse=>{
-        setPersons(persons.map(p=>p.id === personObj.id ? updateResponse : p))
-        setNewName('')
-        setNum('')
-      })
-      : setNewName('')
-      setNum('')
-    }else{
-      personService.create(newPerson)
-      .then(createdPerson=>{
-        setPersons(persons.concat(createdPerson))
-        setNewName('')
-        setNum('')
-      })
+    console.log('effect run, country to search is now ', country)
+    if(country){
+      console.log('fetching countries ....')
+       axios
+       .get(`https://studies.cs.helsinki.fi/restcountries/api/all`)
+       .then(response=>{
+        const items = response.data
+         setList(items)
+       })
+       .catch(err=>{
+        console.log(err)
+       })      
     }
 
-    // if (!(personSingle)){
-    //   personService.create(personObj).then(response=>{
-    //     setPersons(persons.concat(response))
-    //     setNewName('')
-    //     setNum('')
-    //   })
-    // }else{
-    //   window.confirm(`${personSingle.name} already added`)
-    // }
-    
-
-    
+  },[country])
+  const queryChange =(event)=>{
+    setQuery(event.target.value)
+    setCountry(query)
     
   }
-  const changeName =(event)=>{
-    setNewName(event.target.value)
-  }
-  const changeNum =(event)=>{
-    setNum(event.target.value)
-  }
-  const changeSearch =(event)=>{
-    setSearch(event.target.value)
-  }
-  const dataSearch =(event)=>{
-    event.preventDefault()
-    setPersons(persons.filter((person)=>{
-      if (person.name.match(search)){
-        console.log(person)
-        return <li key={person.id}>{person.name} {person.number}</li>
-      }
-    }))
-  }
-  const delPerson =(id)=>{
-    const msg = window.confirm('Do you really want to delete?')
-    if(msg){
-      personService
-      .delperson(id)
-      .then(response=>{
-        setPersons(persons.filter(p=>p.id !== id))
-        console.log(`deleted:  ${response}`)
-    })
-    .catch(err=>{
-      console.log(err)
-    })
-    }
-    
+  const toShow = list.filter(item=>item.name.common.toLowerCase().includes(query.toLowerCase())
+  ? item : console.log('not match'))
+  
+  const showBtn =(item)=>{
+    console.log(item)
+    setDisplay(
+      <Nations key={item.flag}
+        name={item.name.common} area={item.area} population={item.population}
+        languages={Object.values(item.languages).map((i, k)=><li key={k}>{i}</li>)}
+        capital={item.capital} flag={item.flags.png}
+      />
+    )
   }
   return (
     <>
-    <div>
-      
-    <Filter search={search} dataSearch={dataSearch} changeSearch={changeSearch} />
-      
-    </div>
-      <div>
-      <PersonForm addData={addData} newName={newName} 
-      changeName={changeName} num={num} 
-      changeNum={changeNum}
-      />
-      <h2>Numbers</h2>
-      {
-        persons.map(person=>(
-          <Persons key={person.id}
-          name={person.name} 
-          number={person.number}
-          delPerson={()=>delPerson(person.id)}
-           />
-        ))
-      }
-    </div>
+       find a country <input type='search'
+       placeholder='search country ...'
+       value={query}
+       onChange={queryChange}
+       />
+       {
+        toShow.length > 10 ?
+        <p>Too many matches, specify another filter</p>
+        : toShow.map((item, i)=>{
+          if(toShow.length === 1){
+            console.log(item)
+            return <Nations name={item.name.common} key={i}
+              capital={item.capital}
+              area={item.area}
+              population={item.population}
+              languages={Object.values(item.languages).map((i,k)=><li key={k}>{i}</li>)}
+              flag={item.flags.png}
+             />
+            
+          }else return (
+            <div key={i}> {item.name.common} 
+              <button 
+                onClick={()=>showBtn(item)}>
+                  show
+              </button>
+            </div>
+            
+          )
+        })
+       }
+      <div> {display}</div>
     </>
   )
 }
